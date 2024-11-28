@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка файла на S3</title>
+</head>
+<body>
+    <h1>Загрузка файла на S3</h1>
+    
+    <h2>Загрузить через бэкенд</h2>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Загрузить</button>
+    </form>
+
+    <h2>Загрузить напрямую в S3</h2>
+    <form id="uploadForm">
+        <input type="file" id="fileInput" required>
+        <button type="button" onclick="getSignedUrl()">Upload2</button>
+    </form>
+
+    <script>
+        async function getSignedUrl() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Пожалуйста, выберите файл для загрузки.");
+                return;
+            }
+
+            // Получаем предварительно подписанный URL
+            const response = await fetch('/generate-signed-url?file_name=' + encodeURIComponent(file.name));
+            const data = await response.json();
+
+            if (data.url) {
+                // Загружаем файл на S3
+                const uploadResponse = await fetch(data.url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+
+                if (uploadResponse.ok) {
+                    alert('Файл успешно загружен на S3!');
+                } else {
+                    alert('Ошибка при загрузке файла на S3.');
+                }
+            } else {
+                alert('Ошибка при получении URL для загрузки.');
+            }
+        }
+    </script>
+</body>
+</html>
